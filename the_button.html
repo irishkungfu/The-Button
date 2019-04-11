@@ -71,7 +71,7 @@
 
 <body>
     <div class="wrapper">
-        <button id="switch" class="light-switch">Living Room</button>
+        <button id="switch" class="light-switch">&nbsp;</button>
     </div>
 </body>
 <script>
@@ -98,9 +98,13 @@
             .then(data => setLightStatus(data[0].success[`/lights/${id}/state/on`]))
             .catch(error => console.error(error));
     }
-    function setLightStatus(isOn) {
+    function setLightStatus(isOn, data) {
+        console.log(isOn)
         console.log("light is on: " + isOn)
         lightStatus = isOn
+        if (data) {
+            switchElement.textContent = data.name
+        }
         toggleLightSwitchClass(isOn)
     }
     function swapClass(element, class_1, class_2) {
@@ -115,7 +119,7 @@
     function getLightStatus(id) {
         fetch(`${domain}/${id}`)
             .then(response => response.json())
-            .then(resJSON => setLightStatus(resJSON.state.on))
+            .then(resJSON => setLightStatus(resJSON.state.on, resJSON))
             .catch(err => console.error('Caught Error: ', err))
     }
 </script>
