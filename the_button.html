@@ -75,9 +75,10 @@
     </div>
 </body>
 <script>
+    const domain = "http://192.168.0.5/api/SY7zyonKw6bfK7aeDUdQRzwdFuyKI8wulVl92OJ3/lights"
     let lightStatus = true;
-    getLightStatus(2)
-    document.getElementById("switch").addEventListener("click", () => turnOn(!lightStatus))
+    getLightStatus(3)
+    document.getElementById("switch").addEventListener("click", () => turnOn(!lightStatus, 3))
 
     function turnOn(onOff, id = 2) {
         function postData(url = ``, data = {}) {
@@ -90,7 +91,7 @@
             })
                 .then(response => response.json());
         }
-        const url = `http://192.168.0.5/api/SY7zyonKw6bfK7aeDUdQRzwdFuyKI8wulVl92OJ3/lights/${id}/state`
+        const url = `${domain}/${id}/state`
         const body = { "on": onOff }
         postData(url, body)
             // set the light status to the oposite of what it is right now.
@@ -113,7 +114,7 @@
 
     }
     function getLightStatus(id) {
-        fetch(`http://192.168.0.5/api/SY7zyonKw6bfK7aeDUdQRzwdFuyKI8wulVl92OJ3/lights/${id}`)
+        fetch(`${domain}/${id}`)
             .then(response => response.json())
             .then(resJSON => setLightStatus(resJSON.state.on))
             .catch(err => console.error('Caught Error: ', err))
