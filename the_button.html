@@ -51,7 +51,8 @@
         }
 
         .light-switch:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
+            cursor: pointer;
         }
 
         .light-switch:focus {
@@ -65,24 +66,66 @@
             justify-content: center;
             align-items: center;
             background: black;
+            flex-direction: column;
         }
     </style>
 </head>
 
 <body>
     <div class="wrapper">
-        <button id="switch" class="light-switch">&nbsp;</button>
+        <button id="switch_3" class="light-switch">Button 2</button>
+        <div class="target"></div>
     </div>
 </body>
 <script>
     const domain = "http://192.168.0.5/api/SY7zyonKw6bfK7aeDUdQRzwdFuyKI8wulVl92OJ3/lights"
-    let lightStatus = true;
-    const switchElement = document.getElementById("switch")
-    getLightStatus(3)
-    switchElement.addEventListener("click", () => turnOn(!lightStatus, 3))
+    const hueAccessories = []
 
-    function turnOn(onOff, id) {
-        function postData(url = ``, data = {}) {
+
+    class lightButton {
+        constructor(id, domain) {
+            this.id = id
+            this.domain = domain
+        }
+        state = {
+            domain: this.domain,
+            id: this.id,
+            element: document.getElementById(`switch_3`)
+        }
+
+        fetchLightStatus() {
+            return fetch(`${this.domain}/${this.id}`)
+                .then(response => response.json())
+                .then(data => data)
+                .catch(err => console.error('Caught Error: ', err))
+        }
+        updateStateFromHUE() {
+            return this.fetchLightStatus().then(huePayload => this.setState(huePayload))
+        }
+        init() {
+            return this.updateStateFromHUE()
+                .then(() => this.updateButtonText())
+                .then(() => this.toggleClasses())
+                .then(() => this.addClickEvent())
+        }
+        setState(data) {
+            this.state = {
+                ...this.state,
+                "hueSettings": data
+            }
+        }
+        swapClass(element, class_1, class_2) {
+            this.state.element.classList.add(class_1)
+            this.state.element.classList.remove(class_2)
+        }
+        updateButtonText() {
+            this.state.element.textContent = this.state.hueSettings.name
+        }
+        toggleClasses() {
+            console.log("state.on " + this.state.hueSettings.state.on)
+            return this.state.hueSettings.state.on === true ? this.swapClass(this.state.element, "on", "off") : this.swapClass(this.state.element, "off", "on")
+        }
+        postData(url, data) {
             return fetch(url, {
                 method: "PUT",
                 headers: {
@@ -90,38 +133,29 @@
                 },
                 body: JSON.stringify(data),
             })
-                .then(response => response.json());
+                .then(response => response.json())
+                .catch(error => console.error(error))
         }
-        const url = `${domain}/${id}/state`
-        const body = { "on": onOff }
-        postData(url, body)
-            .then(data => setLightStatus(data[0].success[`/lights/${id}/state/on`]))
-            .catch(error => console.error(error));
-    }
-    function setLightStatus(isOn, data) {
-        console.log(isOn)
-        console.log("light is on: " + isOn)
-        lightStatus = isOn
-        if (data) {
-            switchElement.textContent = data.name
+        power() {
+            const url = `${this.domain}/${this.id}/state`
+            const body = { "on": !this.state.hueSettings.state.on }
+            this.postData(url, body)
+                .then(() => this.updateStateFromHUE())
+                .then(() => this.toggleClasses())
+                .catch(error => console.error(error));
         }
-        toggleLightSwitchClass(isOn)
-    }
-    function swapClass(element, class_1, class_2) {
-        element.classList.add(class_1)
-        element.classList.remove(class_2)
-    }
-    function toggleLightSwitchClass(isOn) {
-        const element = document.getElementById("switch");
-        isOn === true ? swapClass(element, "on", "off") : swapClass(element, "off", "on")
+        addClickEvent() {
+            this.state.element.addEventListener("click", () => hueAccessories[0].power())
+        }
 
     }
-    function getLightStatus(id) {
-        fetch(`${domain}/${id}`)
-            .then(response => response.json())
-            .then(resJSON => setLightStatus(resJSON.state.on, resJSON))
-            .catch(err => console.error('Caught Error: ', err))
-    }
+    const light1 = new lightButton(3, domain);
+
+    hueAccessories.push(light1)
+    hueAccessories[0].init().then(status => {
+        console.log(hueAccessories[0].state)
+    })
+
 </script>
 
 </html>
