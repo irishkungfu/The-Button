@@ -77,10 +77,11 @@
 <script>
     const domain = "http://192.168.0.5/api/SY7zyonKw6bfK7aeDUdQRzwdFuyKI8wulVl92OJ3/lights"
     let lightStatus = true;
+    const switchElement = document.getElementById("switch")
     getLightStatus(3)
-    document.getElementById("switch").addEventListener("click", () => turnOn(!lightStatus, 3))
+    switchElement.addEventListener("click", () => turnOn(!lightStatus, 3))
 
-    function turnOn(onOff, id = 2) {
+    function turnOn(onOff, id) {
         function postData(url = ``, data = {}) {
             return fetch(url, {
                 method: "PUT",
@@ -94,8 +95,6 @@
         const url = `${domain}/${id}/state`
         const body = { "on": onOff }
         postData(url, body)
-            // set the light status to the oposite of what it is right now.
-
             .then(data => setLightStatus(data[0].success[`/lights/${id}/state/on`]))
             .catch(error => console.error(error));
     }
