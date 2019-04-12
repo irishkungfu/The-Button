@@ -97,6 +97,7 @@
         init() {
             return this.updateStateFromHUE()
                 .then(() => this.setState(this.convertHueXYtoRGB(), "lightColor"))
+                .then(() => { debugger })
                 .then(() => this.state.hueSettings.state.on && this.setBackground())
                 .then(() => this.updateButtonText())
                 .then(() => this.toggleClasses())
@@ -133,8 +134,12 @@
         power() {
             const url = `${this.domain}/${this.id}/state`
             const body = { "on": !this.state.hueSettings.state.on }
+            debugger
             this.postData(url, body)
+                .then(() => { debugger })
+
                 .then(() => this.updateStateFromHUE())
+                .then(() => this.setState(this.convertHueXYtoRGB(), "lightColor"))
                 .then(() => this.state.hueSettings.state.on && this.setBackground())
                 .then(() => this.toggleClasses())
                 .catch(error => console.error(error));
