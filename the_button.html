@@ -27,18 +27,9 @@
         }
 
         .off {
-            background: #505160;
+            background: #505160 !important;
             color: black;
             opacity: 1;
-            /* transition: opacity .2s ease-in; */
-        }
-
-
-        .on {
-            background: white;
-            color: #505160;
-            box-shadow: 1px 0px 30px 10px rgba(255, 252, 255, 1);
-
         }
 
         .light-switch {
@@ -47,7 +38,8 @@
             transition: all .1s ease-in-out;
             font-family: 'Roboto Condensed', sans-serif;
             text-transform: uppercase;
-            /* transform: scale(1, 1.5); */
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
         .light-switch:hover {
@@ -100,19 +92,18 @@
                 .catch(err => console.error('Caught Error: ', err))
         }
         updateStateFromHUE() {
-            return this.fetchLightStatus().then(huePayload => this.setState(huePayload))
+            return this.fetchLightStatus().then(huePayload => this.setState(huePayload, "hueSettings"))
         }
         init() {
             return this.updateStateFromHUE()
+                .then(() => this.setState(this.convertHueXYtoRGB(), "lightColor"))
+                .then(() => this.state.hueSettings.state.on && this.setBackground())
                 .then(() => this.updateButtonText())
                 .then(() => this.toggleClasses())
                 .then(() => this.addClickEvent())
         }
-        setState(data) {
-            this.state = {
-                ...this.state,
-                "hueSettings": data
-            }
+        setState(data, name) {
+            this.state[name] = data
         }
         swapClass(element, class_1, class_2) {
             this.state.element.classList.add(class_1)
@@ -121,8 +112,11 @@
         updateButtonText() {
             this.state.element.textContent = this.state.hueSettings.name
         }
+        setBackground() {
+            const rgb = this.state.lightColor
+            this.state.element.style.background = `rgb(${rgb.r},${rgb.g},${rgb.b})`
+        }
         toggleClasses() {
-            console.log("state.on " + this.state.hueSettings.state.on)
             return this.state.hueSettings.state.on === true ? this.swapClass(this.state.element, "on", "off") : this.swapClass(this.state.element, "off", "on")
         }
         postData(url, data) {
@@ -141,11 +135,40 @@
             const body = { "on": !this.state.hueSettings.state.on }
             this.postData(url, body)
                 .then(() => this.updateStateFromHUE())
+                .then(() => this.state.hueSettings.state.on && this.setBackground())
                 .then(() => this.toggleClasses())
                 .catch(error => console.error(error));
         }
         addClickEvent() {
             this.state.element.addEventListener("click", () => hueAccessories[0].power())
+        }
+        convertHueXYtoRGB() {
+            const x = this.state.hueSettings.state.xy[0]
+            const y = this.state.hueSettings.state.xy[1]
+            const bri = this.state.hueSettings.state.bri
+            const z = 1.0 - x - y;
+
+            const Y = bri / 255.0; // Brightness of lamp
+            const X = (Y / y) * x;
+            const Z = (Y / y) * z;
+            let r = X * 1.612 - Y * 0.203 - Z * 0.302;
+            let g = -X * 0.509 + Y * 1.412 + Z * 0.066;
+            let b = X * 0.026 - Y * 0.072 + Z * 0.962;
+            r = r <= 0.0031308 ? 12.92 * r : (1.0 + 0.055) * Math.pow(r, (1.0 / 2.4)) - 0.055;
+            g = g <= 0.0031308 ? 12.92 * g : (1.0 + 0.055) * Math.pow(g, (1.0 / 2.4)) - 0.055;
+            b = b <= 0.0031308 ? 12.92 * b : (1.0 + 0.055) * Math.pow(b, (1.0 / 2.4)) - 0.055;
+            const maxValue = Math.max(r, g, b);
+            r /= maxValue;
+            g /= maxValue;
+            b /= maxValue;
+            r = r * 255; if (r < 0) { r = 255 };
+            g = g * 255; if (g < 0) { g = 255 };
+            b = b * 255; if (b < 0) { b = 255 };
+            return {
+                r: r,
+                g: g,
+                b: b
+            }
         }
 
     }
